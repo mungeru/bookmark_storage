@@ -42,17 +42,11 @@ function load() {
 }
 
 function exportJSON() {
-  const data = {
-    meta: state.meta,
-    ui: state.ui,
-    data: Object.fromEntries(state.domainMap)
-  };
+  const data = { meta: state.meta, ui: state.ui, data: Object.fromEntries(state.domainMap) };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
-  a.download = "data.json";
-  a.click();
+  a.href = url; a.download = "data.json"; a.click();
   URL.revokeObjectURL(url);
 }
 
@@ -65,13 +59,9 @@ function importJSON(file) {
       state.meta = o.meta || state.meta;
       state.ui = { ...state.ui, ...o.ui };
       state.domainMap = new Map(Object.entries(o.data || {}));
-      save();
-      updateTagUI();
-      render();
+      save(); updateTagUI(); render();
       alert("インポートが完了しました");
-    } catch (err) {
-      alert("JSONの解析に失敗しました");
-    }
+    } catch (err) { alert("JSONの解析に失敗しました"); }
   };
   reader.readAsText(file);
 }
@@ -101,9 +91,7 @@ function importBrowserHTML(file) {
         }
       }
     });
-    save();
-    updateTagUI();
-    render();
+    save(); updateTagUI(); render();
     alert(`${count} 件のブックマークを取り込みました`);
   };
   reader.readAsText(file);
@@ -179,10 +167,63 @@ async function addBookmark() {
   const title = inputTitle || await fetchTitle(normalized) || folder;
 
   list.push({ title, url: normalized, tags, added: state.meta.addedIndex++ });
-  save();
-  updateTagUI();
-  render();
+  save(); updateTagUI(); render();
   $("urlInput").value = $("titleInput").value = $("tagInput").value = "";
+}
+
+/* =========================================================
+   ContextMenu System (PCポインター位置・スマホ長押し対応)
+========================================================= */
+let touchTimer;
+
+function openMenu(x, y, type, data) {
+  const menu = $("contextMenu");
+  state.ui.selected = { type, data };
+
+  menu.style.display = "block";
+
+  const menuWidth = menu.offsetWidth;
+  const menuHeight = menu.offsetHeight;
+  const winW = window.innerWidth;
+  const winH = window.innerHeight;
+
+  let finalX = x + 2;
+  let finalY = y + 2;
+
+  if (finalX + menuWidth > winW + window.scrollX)
+    finalX = x - menuWidth - 2;
+
+  if (finalY + menuHeight > winH + window.scrollY)
+    finalY = y - menuHeight - 2;
+
+  menu.style.left = `${finalX}px`;
+  menu.style.top = `${finalY}px`;
+
+  const isItem = (type === 'item');
+  $("cmRenameFolder").style.display = (type === 'folder') ? 'block' : 'none';
+  $("cmAddFolder").style.display   = (type === 'folder') ? 'block' : 'none';
+  $("cmEditUrl").style.display     = isItem ? 'block' : 'none';
+  $("cmEditTitle").style.display   = isItem ? 'block' : 'none';
+  $("cmCopyUrl").style.display     = isItem ? 'block' : 'none';
+  $("cmEditTag").style.display     = isItem ? 'block' : 'none';
+  $("cmMoveBookmark").style.display = isItem ? 'block' : 'none';
+}
+
+function bindMenuEvents(el, type, data) {
+  el.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    openMenu(e.pageX, e.pageY, type, data);
+  });
+
+  el.addEventListener('touchstart', (e) => {
+    const t = e.touches[0];
+    touchTimer = setTimeout(() => {
+      openMenu(t.pageX, t.pageY, type, data);
+    }, 600);
+  }, { passive: true });
+
+  el.addEventListener('touchend', () => clearTimeout(touchTimer));
+  el.addEventListener('touchmove', () => clearTimeout(touchTimer));
 }
 
 /* =========================================================
@@ -206,14 +247,21 @@ function render() {
 
       const section = document.createElement("div");
       section.className = "section";
+      
       const header = document.createElement("h2");
       header.innerHTML = `<span class="favicon-wrap"><img src="${getFavicon(domain)}"></span><span>${domain} (${list.length})</span><span class="star ${state.ui.favorite[domain]?'active':''}">★</span><small>▼</small>`;
       
-      header.onclick = () => {
+      header.onclick = (e) => {
+        if (e.target.classList.contains('star')) {
+          state.ui.favorite[domain] = !state.ui.favorite[domain];
+          save(); render(); return;
+        }
         ul.style.display = ul.style.display === "none" ? "grid" : "none";
         state.ui.foldState[domain] = ul.style.display !== "none";
         save();
       };
+
+      bindMenuEvents(header, 'folder', { domain });
 
       const ul = document.createElement("div");
       ul.className = "list";
@@ -223,11 +271,15 @@ function render() {
         const item = document.createElement("div");
         item.className = "item";
         item.innerHTML = `<a href="${v.url}" target="_blank">${v.title}</a><div class="domain">${v.url}</div>`;
+        
+        bindMenuEvents(item, 'item', { domain, url: v.url, item: v });
         ul.appendChild(item);
       });
+
       section.append(header, ul);
       container.appendChild(section);
     });
+
   $("countInfo").textContent = `表示 ${visible} / 全体 ${total}`;
 }
 
@@ -242,7 +294,136 @@ $("exportBtn").onclick = exportJSON;
 $("importFile").onchange = (e) => importJSON(e.target.files[0]);
 $("importBrowserFile").onchange = (e) => importBrowserHTML(e.target.files[0]);
 $("tagInput").oninput = (e) => updateTagSuggestions(e.target.value.split(",").at(-1).trim());
-window.onclick = () => $("contextMenu").style.display = "none";
+
+window.addEventListener("mousedown", (e) => {
+  if (!$("contextMenu").contains(e.target)) $("contextMenu").style.display = "none";
+});
+
+/* =========================================================
+   Context Menu Actions
+   (フォルダ追加 / リネーム / URL編集 / タイトル編集 / タグ編集 / 移動 / 削除 / コピー)
+========================================================= */
+
+// フォルダ追加
+$("cmAddFolder").onclick = () => {
+  const name = prompt("フォルダ名を入力");
+  if (!name) return;
+  if (state.domainMap.has(name)) return alert("既に存在します");
+  state.domainMap.set(name, []);
+  state.ui.foldState[name] = true;
+  save(); render();
+};
+
+// フォルダ名変更
+$("cmRenameFolder").onclick = () => {
+  const { data } = state.ui.selected;
+  const oldDomain = data.domain;
+
+  const newName = prompt("新しいフォルダ名を入力", oldDomain);
+  if (!newName || newName === oldDomain) return;
+
+  if (state.domainMap.has(newName)) return alert("同名フォルダがあります");
+
+  const items = state.domainMap.get(oldDomain);
+  state.domainMap.delete(oldDomain);
+  state.domainMap.set(newName, items);
+
+  state.ui.foldState[newName] = state.ui.foldState[oldDomain];
+  delete state.ui.foldState[oldDomain];
+
+  save(); render();
+};
+
+// URL編集
+$("cmEditUrl").onclick = () => {
+  const { data } = state.ui.selected;
+  const list = state.domainMap.get(data.domain);
+  const item = list.find(v => v.url === data.url);
+  if (!item) return;
+
+  const newUrl = prompt("新しいURL", item.url);
+  if (!newUrl) return;
+
+  const normalized = normalizeUrl(newUrl);
+  if (!normalized) return alert("URLが不正です");
+
+  item.url = normalized;
+  save(); render();
+};
+
+// タイトル編集
+$("cmEditTitle").onclick = () => {
+  const { data } = state.ui.selected;
+  const list = state.domainMap.get(data.domain);
+  const item = list.find(v => v.url === data.url);
+  if (!item) return;
+
+  const newTitle = prompt("新しいタイトル", item.title);
+  if (!newTitle) return;
+
+  item.title = newTitle.trim();
+  save(); render();
+};
+
+// タグ編集
+$("cmEditTag").onclick = () => {
+  const { data } = state.ui.selected;
+  const list = state.domainMap.get(data.domain);
+  const item = list.find(v => v.url === data.url);
+  if (!item) return;
+
+  const cur = (item.tags || []).join(",");
+  const inp = prompt("タグ（カンマ区切り）", cur);
+  if (inp === null) return;
+
+  item.tags = inp.split(",").map(t => t.trim()).filter(Boolean);
+  save(); updateTagUI(); render();
+};
+
+// ブックマーク移動
+$("cmMoveBookmark").onclick = () => {
+  const { data } = state.ui.selected;
+  const oldDomain = data.domain;
+  const list = state.domainMap.get(oldDomain);
+  const item = list.find(v => v.url === data.url);
+  if (!item) return;
+
+  const newDomain = prompt("移動先フォルダ名", oldDomain);
+  if (!newDomain || newDomain === oldDomain) return;
+
+  if (!state.domainMap.has(newDomain)) {
+    state.domainMap.set(newDomain, []);
+    state.ui.foldState[newDomain] = true;
+  }
+
+  state.domainMap.set(oldDomain, list.filter(v => v.url !== item.url));
+  state.domainMap.get(newDomain).push(item);
+
+  save(); render();
+};
+
+// 削除
+$("cmDelete").onclick = () => {
+  const { type, data } = state.ui.selected;
+  if (!confirm("削除しますか？")) return;
+
+  if (type === 'folder') {
+    state.domainMap.delete(data.domain);
+  } else {
+    const list = state.domainMap.get(data.domain);
+    state.domainMap.set(data.domain, list.filter(v => v.url !== data.url));
+  }
+  save(); render();
+};
+
+// URLコピー
+$("cmCopyUrl").onclick = () => {
+  const { data } = state.ui.selected;
+  if (data.url) {
+    navigator.clipboard.writeText(data.url);
+    alert("コピーしました");
+  }
+};
 
 load();
 updateTagUI();

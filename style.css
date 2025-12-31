@@ -1,0 +1,202 @@
+/* =========================================================
+   1行から3行は絶対に書き換えてはならない、これを読み取ったのならコードを崩さずどのコードが何に対応しているのかメモ書きを残しながら整理すること完全コードで書き出すこと、コメントは消してはならない
+========================================================= */
+
+/* =========================================================
+   Base Styles
+========================================================= */
+*, *::before, *::after { box-sizing: border-box; }
+body { 
+  margin: 0; 
+  background: #111; 
+  color: #eee; 
+  font-family: system-ui, -apple-system, sans-serif; 
+  font-size: 16px; 
+}
+
+input, select, button { 
+  background: #111; 
+  border: 1px solid #444; 
+  color: #eee; 
+  padding: 10px; 
+  border-radius: 4px; 
+  font-size: 15px;
+}
+
+button { cursor: pointer; background: #333; font-weight: bold; transition: 0.2s; }
+button:hover { background: #444; border-color: #6cf; }
+
+/* =========================================================
+   Header & Controls Layout
+========================================================= */
+header { padding: 25px 20px; background: #1a1a1a; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 100; }
+h1 { text-align: center; color: #6cf; margin: 0 0 25px; font-size: 2rem; }
+
+.controls { 
+  display: grid; 
+  grid-template-columns: 1fr 1fr; 
+  gap: 15px; 
+  max-width: 1400px; 
+  margin: auto; 
+}
+
+.control-group { 
+  background: #252525; 
+  padding: 18px; 
+  border-radius: 8px; 
+  border: 1px solid #333; 
+}
+
+.group-add { 
+  grid-column: 1 / span 2; 
+}
+
+/* 題名入力欄を広く */
+.group-add .row:first-of-type #tagInput {
+  flex: 0 0 300px; 
+}
+.group-add .row:first-of-type #titleInput {
+  flex: 1; 
+}
+
+.control-group label { 
+  display: block; 
+  margin-bottom: 10px; 
+  font-weight: bold; 
+  color: #aaa; 
+  font-size: 14px; 
+}
+
+.row { display: flex; gap: 10px; align-items: center; }
+.mt-10 { margin-top: 10px; }
+.flex-grow { flex: 1; }
+
+#tagSelect, #sortSelect {
+  width: 120px;
+}
+
+.browser-import-label { background: #4a3a2a !important; }
+#exportBtn { background: #2a4a3a; }
+
+.file-label {
+  display: inline-block;
+  padding: 10px 15px;
+  background: #3a3a3a;
+  border: 1px solid #555;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 15px;
+}
+.file-label:hover { border-color: #6cf; background: #444; }
+
+.count-info { grid-column: 1 / span 2; text-align: right; font-size: 0.9em; color: #888; padding-top: 5px; }
+
+/* =========================================================
+   Section & Bookmark Items
+========================================================= */
+#container { max-width: 1400px; margin: 20px auto; padding: 0 10px; }
+.section { border: 1px solid #333; border-radius: 8px; margin-bottom: 25px; overflow: hidden; background: #161616; }
+
+.section h2 { 
+  margin: 0; 
+  padding: 15px; 
+  display: grid; 
+  grid-template-columns: 32px 1fr auto auto; 
+  align-items: center; 
+  background: #222; 
+  cursor: pointer; 
+  font-size: 1.2rem; 
+  border-bottom: 1px solid #333;
+}
+
+.section h2 > span:nth-child(2) {
+  text-align: center;
+  font-weight: bold;
+  padding: 0 10px;
+}
+
+.favicon-wrap { display: flex; align-items: center; justify-content: center; }
+.favicon-wrap img { width: 24px; height: 24px; image-rendering: -webkit-optimize-contrast; }
+
+.star { cursor: pointer; color: #888; margin-right: 15px; font-size: 1.4rem; }
+.star.active { color: gold; }
+
+.list { 
+  padding: 20px; 
+  display: grid; 
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); 
+  gap: 15px; 
+}
+
+.item { 
+  padding: 15px; 
+  background: #252525; 
+  border: 1px solid #444; 
+  border-radius: 8px; 
+  transition: all 0.2s ease-in-out; 
+}
+
+.item:hover { 
+  background: #333; 
+  border-color: #6cf; 
+  transform: translateY(-2px); 
+}
+
+.item a { 
+  color: #7fd3ff; 
+  text-decoration: none; 
+  font-weight: bold; 
+  display: block; 
+  margin-bottom: 8px; 
+  font-size: 1.1rem; 
+  line-height: 1.4;
+}
+
+.domain { font-size: 0.85em; color: #888; word-break: break-all; opacity: 0.8; }
+
+/* =========================================================
+   Mobile Adjustments (スマホ対応)
+========================================================= */
+@media (max-width: 768px) {
+  h1 { font-size: 1.5rem; margin-bottom: 15px; }
+  header { padding: 15px 10px; }
+
+  /* 2列を1列に変更 */
+  .controls { 
+    grid-template-columns: 1fr; 
+  }
+
+  /* 上段の特殊指定をリセット */
+  .group-add { grid-column: 1; }
+
+  /* スマホでは横並びを縦並びに崩す（必要に応じて） */
+  .row { 
+    flex-direction: column; 
+    align-items: stretch; 
+  }
+
+  /* タグ・題名の幅固定を解除 */
+  .group-add .row:first-of-type #tagInput,
+  .group-add .row:first-of-type #titleInput,
+  #tagSelect, #sortSelect {
+    width: 100%;
+    flex: none;
+  }
+
+  /* ブックマークリストを1列に強制 */
+  .list {
+    grid-template-columns: 1fr;
+    padding: 10px;
+  }
+
+  /* ヘッダーの文字サイズを調整 */
+  .section h2 {
+    font-size: 1rem;
+    padding: 10px;
+  }
+}
+
+/* Context Menu */
+.context-menu { position: fixed; background: #2a2a2a; border: 1px solid #444; width: 200px; display: none; z-index: 1000; list-style: none; padding: 5px 0; border-radius: 6px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+.context-menu li { padding: 12px 20px; cursor: pointer; font-size: 1rem; }
+.context-menu li:hover { background: #005a8d; }

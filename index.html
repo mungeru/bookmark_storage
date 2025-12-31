@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Bookmark Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>ブックマーク管理</h1>
+
+  <div class="controls">
+    <div class="control-group group-add">
+      <label>URL追加</label>
+      <div class="row">
+        <input id="tagInput" list="tagSuggestions" placeholder="タグ入力欄">
+        <datalist id="tagSuggestions"></datalist>
+        <input id="titleInput" placeholder="題名入力欄（空欄で自動取得）">
+      </div>
+      <div class="row mt-10">
+        <input id="urlInput" type="url" placeholder="URL入力欄" class="flex-grow">
+        <button id="addBtn">追加</button>
+      </div>
+    </div>
+
+    <div class="control-group group-search">
+      <label>検索 / ソート</label>
+      <div class="row">
+        <input id="searchInput" placeholder="検索欄" class="flex-grow">
+        <select id="tagSelect">
+          <option value="">タグ</option>
+        </select>
+        <select id="sortSelect">
+          <option value="added">ソート</option>
+          <option value="title">タイトル</option>
+          <option value="url">URL</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="control-group group-data">
+      <label>データ管理</label>
+      <div class="row">
+        <button id="exportBtn">JSON保存</button>
+        <label class="file-label">
+          JSON読込
+          <input type="file" id="importFile" accept=".json" style="display:none;">
+        </label>
+        <label class="file-label browser-import-label">
+          HTML読込(bookmark)
+          <input type="file" id="importBrowserFile" accept=".html" style="display:none;">
+        </label>
+      </div>
+    </div>
+
+    <div id="countInfo" class="count-info"></div>
+  </div>
+</header>
+
+<main id="container"></main>
+
+<div id="contextMenu" class="context-menu">
+  <ul>
+    <li id="cmAddFolder">フォルダ追加</li>
+    <li id="cmRenameFolder">フォルダ名変更</li>
+    <li id="cmMoveBookmark">フォルダへ移動</li>
+    <li id="cmToggleEmpty">空フォルダ表示切替</li>
+    <li id="cmEditTag">タグ編集</li>
+    <li id="cmEditUrl">URL編集</li>
+    <li id="cmEditTitle">題名を編集</li>
+    <li id="cmCopyUrl">URLコピー</li>
+    <li id="cmDelete" class="delete">削除</li>
+  </ul>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -4,37 +4,46 @@
 
 /* =========================================================
    DOM / State
+   → UI 基本構造とメモリ
+   ※ ここがアプリの「状態本体」。render()・save() 全部ここを見る
 ========================================================= */
 const $ = id => document.getElementById(id);
 const STORAGE_KEY = "bookmarkJSON";
 
 const state = {
-  domainMap: new Map(),
-  meta: { addedIndex: 0 },
+  domainMap: new Map(),          // ← 各ドメイン フォルダ → 配列でブックマーク
+  meta: { addedIndex: 0 },       // ← 追加順保存（ソートなど将来拡張用）
   ui: {
-    selected: null,
-    foldState: {},
-    favorite: {},
+    selected: null,              // ← contextMenu で選択されてる対象
+    foldState: {},               // ← フォルダ開閉状態
+    favorite: {},                // ← ★ フォルダお気に入り
     recentTags: [],
     showEmptyFolder: true,
-    lastSelected: null
+    lastSelected: null,
+    viewMode: "grid"             // ← grid / list 表示切替
   }
 };
 
 /* =========================================================
    Storage & JSON System
+   → 保存 / 読み込み / エクスポート / インポート
+   ※ ここは state 全体を localStorage と同期する役
 ========================================================= */
 function save() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({
-    meta: state.meta,
-    ui: state.ui,
-    data: Object.fromEntries(state.domainMap)
-  }));
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({
+      meta: state.meta,
+      ui: state.ui,
+      data: Object.fromEntries(state.domainMap)
+    })
+  );
 }
 
 function load() {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return;
+
   const o = JSON.parse(raw);
   state.meta = o.meta || state.meta;
   state.ui = { ...state.ui, ...o.ui };
@@ -42,85 +51,119 @@ function load() {
 }
 
 function exportJSON() {
-  const data = { meta: state.meta, ui: state.ui, data: Object.fromEntries(state.domainMap) };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const data = {
+    meta: state.meta,
+    ui: state.ui,
+    data: Object.fromEntries(state.domainMap)
+  };
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: "application/json"
+  });
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url; a.download = "data.json"; a.click();
+  a.href = url;
+  a.download = "data.json";
+  a.click();
   URL.revokeObjectURL(url);
 }
 
 function importJSON(file) {
   if (!file) return;
   const reader = new FileReader();
+
   reader.onload = (e) => {
     try {
       const o = JSON.parse(e.target.result);
       state.meta = o.meta || state.meta;
       state.ui = { ...state.ui, ...o.ui };
       state.domainMap = new Map(Object.entries(o.data || {}));
-      save(); updateTagUI(); render();
+
+      save();
+      updateTagUI();
+      render();
       alert("インポートが完了しました");
-    } catch (err) { alert("JSONの解析に失敗しました"); }
+    } catch {
+      alert("JSONの解析に失敗しました");
+    }
   };
+
   reader.readAsText(file);
 }
 
 function importBrowserHTML(file) {
   if (!file) return;
+
   const reader = new FileReader();
   reader.onload = (e) => {
     const parser = new DOMParser();
     const doc = parser.parseFromString(e.target.result, "text/html");
     const links = doc.querySelectorAll("a");
     let count = 0;
+
     links.forEach(link => {
       const url = link.href;
       const title = link.textContent || "No Title";
       const normalized = normalizeUrl(url);
-      if (normalized) {
-        const folder = new URL(normalized).hostname;
-        if (!state.domainMap.has(folder)) {
-          state.domainMap.set(folder, []);
-          state.ui.foldState[folder] = true;
-        }
-        const list = state.domainMap.get(folder);
-        if (!list.some(item => item.url === normalized)) {
-          list.push({ title, url: normalized, tags: [], added: state.meta.addedIndex++ });
-          count++;
-        }
+
+      if (!normalized) return;
+      const folder = new URL(normalized).hostname;
+
+      // ← 新規ドメインフォルダ生成
+      if (!state.domainMap.has(folder)) {
+        state.domainMap.set(folder, []);
+        state.ui.foldState[folder] = true;
+      }
+
+      const list = state.domainMap.get(folder);
+      if (!list.some(item => item.url === normalized)) {
+        list.push({ title, url: normalized, tags: [], added: state.meta.addedIndex++ });
+        count++;
       }
     });
-    save(); updateTagUI(); render();
+
+    save();
+    updateTagUI();
+    render();
     alert(`${count} 件のブックマークを取り込みました`);
   };
+
   reader.readAsText(file);
 }
 
 /* =========================================================
    Utils / Logic
+   → 共通処理 / URL正規化 / タグ抽出
 ========================================================= */
 function getAllTags() {
   const set = new Set();
-  state.domainMap.forEach(list => list.forEach(v => (v.tags || []).forEach(t => set.add(t))));
+  state.domainMap.forEach(list =>
+    list.forEach(v =>
+      (v.tags || []).forEach(t => set.add(t))
+    )
+  );
   return [...set].sort();
 }
 
 function updateTagUI() {
   const sel = $("tagSelect");
   const cur = sel.value;
+
   sel.innerHTML = `<option value="">タグ</option>`;
   getAllTags().forEach(t => {
     const o = document.createElement("option");
     o.value = o.textContent = t;
     sel.appendChild(o);
   });
+
   sel.value = cur;
 }
 
 function updateTagSuggestions(filter = "") {
   const dl = $("tagSuggestions");
   if (!dl) return;
+
   dl.innerHTML = "";
   getAllTags()
     .filter(t => !filter || t.toLowerCase().includes(filter.toLowerCase()))
@@ -131,48 +174,92 @@ function updateTagSuggestions(filter = "") {
     });
 }
 
-const getFavicon = d => `https://www.google.com/s2/favicons?domain=${d}&sz=32`;
+const getFavicon = d =>
+  `https://www.google.com/s2/favicons?domain=${d}&sz=32`;
 
+// URL正規化
 function normalizeUrl(url) {
   try {
     const u = new URL(url);
     u.hash = "";
     if (u.pathname !== "/") u.pathname = u.pathname.replace(/\/$/, "");
     return u.toString();
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
+// title取得
 async function fetchTitle(url) {
   try {
     const res = await fetch("https://r.jina.ai/" + url);
     const text = await res.text();
     return text.match(/<title>(.*?)<\/title>/i)?.[1]?.trim() || "";
-  } catch { return ""; }
+  } catch {
+    return "";
+  }
 }
 
+/* =========================================================
+   ★ ここが今回追加機能
+   YouTube サムネイル対応（+ fallback favicon）
+========================================================= */
+function getThumbnail(url) {
+  try {
+    const u = new URL(url);
+
+    // YouTube 通常
+    if (u.hostname.includes("youtube.com")) {
+      const id = u.searchParams.get("v");
+      if (id) return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+    }
+
+    // 短縮
+    if (u.hostname.includes("youtu.be")) {
+      const id = u.pathname.replace("/", "");
+      if (id) return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+    }
+
+    return `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=64`;
+  } catch {
+    return null;
+  }
+}
+
+/* =========================================================
+   Bookmark 追加処理
+========================================================= */
 async function addBookmark() {
   const rawUrl = $("urlInput").value.trim();
   const inputTitle = $("titleInput").value.trim();
   const tagRaw = $("tagInput").value;
+
   const normalized = normalizeUrl(rawUrl);
   if (!normalized) return alert("正しいURLを入力してください");
 
   const folder = new URL(normalized).hostname;
+
   if (!state.domainMap.has(folder)) {
     state.domainMap.set(folder, []);
     state.ui.foldState[folder] = true;
   }
+
   const list = state.domainMap.get(folder);
   const tags = tagRaw.split(",").map(t => t.trim()).filter(Boolean);
   const title = inputTitle || await fetchTitle(normalized) || folder;
 
   list.push({ title, url: normalized, tags, added: state.meta.addedIndex++ });
-  save(); updateTagUI(); render();
-  $("urlInput").value = $("titleInput").value = $("tagInput").value = "";
+
+  save();
+  updateTagUI();
+  render();
+
+  $("urlInput").value = $("titleInput").value =
+    $("tagInput").value = "";
 }
 
 /* =========================================================
-   ContextMenu System (PCポインター位置・スマホ長押し対応)
+   ContextMenu System
 ========================================================= */
 let touchTimer;
 
@@ -200,6 +287,7 @@ function openMenu(x, y, type, data) {
   menu.style.top = `${finalY}px`;
 
   const isItem = (type === 'item');
+
   $("cmRenameFolder").style.display = (type === 'folder') ? 'block' : 'none';
   $("cmAddFolder").style.display   = (type === 'folder') ? 'block' : 'none';
   $("cmEditUrl").style.display     = isItem ? 'block' : 'none';
@@ -228,36 +316,59 @@ function bindMenuEvents(el, type, data) {
 
 /* =========================================================
    Render
+   → grid / list 表示 + サムネ対応
 ========================================================= */
 function render() {
   const container = $("container");
   container.innerHTML = "";
+
   const kw = $("searchInput").value.toLowerCase();
   const tag = $("tagSelect").value;
+
   let total = 0, visible = 0;
 
   [...state.domainMap.keys()]
-    .sort((a, b) => !!state.ui.favorite[a] !== !!state.ui.favorite[b] ? (state.ui.favorite[a] ? -1 : 1) : a.localeCompare(b))
+    .sort((a, b) =>
+      !!state.ui.favorite[a] !== !!state.ui.favorite[b]
+        ? (state.ui.favorite[a] ? -1 : 1)
+        : a.localeCompare(b)
+    )
     .forEach(domain => {
       const items = state.domainMap.get(domain);
       total += items.length;
-      const list = items.filter(v => (!kw || v.title.toLowerCase().includes(kw)) && (!tag || (v.tags || []).includes(tag)));
+
+      const list = items.filter(v =>
+        (!kw || v.title.toLowerCase().includes(kw)) &&
+        (!tag || (v.tags || []).includes(tag))
+      );
+
       if (!list.length && (kw || tag)) return;
       visible += list.length;
 
       const section = document.createElement("div");
       section.className = "section";
-      
+
       const header = document.createElement("h2");
-      header.innerHTML = `<span class="favicon-wrap"><img src="${getFavicon(domain)}"></span><span>${domain} (${list.length})</span><span class="star ${state.ui.favorite[domain]?'active':''}">★</span><small>▼</small>`;
-      
+      header.innerHTML =
+        `<span class="favicon-wrap"><img src="${getFavicon(domain)}"></span>
+         <span>${domain} (${list.length})</span>
+         <span class="star ${state.ui.favorite[domain]?'active':''}">★</span>
+         <small>▼</small>`;
+
       header.onclick = (e) => {
         if (e.target.classList.contains('star')) {
           state.ui.favorite[domain] = !state.ui.favorite[domain];
-          save(); render(); return;
+          save();
+          render();
+          return;
         }
-        ul.style.display = ul.style.display === "none" ? "grid" : "none";
-        state.ui.foldState[domain] = ul.style.display !== "none";
+
+        ul.style.display =
+          ul.style.display === "none" ? "grid" : "none";
+
+        state.ui.foldState[domain] =
+          ul.style.display !== "none";
+
         save();
       };
 
@@ -265,13 +376,28 @@ function render() {
 
       const ul = document.createElement("div");
       ul.className = "list";
-      ul.style.display = state.ui.foldState[domain] === false ? "none" : "grid";
+
+      if (state.ui.viewMode === "list")
+        ul.classList.add("single");
+
+      ul.style.display =
+        state.ui.foldState[domain] === false ? "none" : "grid";
 
       list.forEach(v => {
         const item = document.createElement("div");
         item.className = "item";
-        item.innerHTML = `<a href="${v.url}" target="_blank">${v.title}</a><div class="domain">${v.url}</div>`;
-        
+
+        item.innerHTML = `
+          <div class="thumb-wrap ${getThumbnail(v.url) ? "" : "empty"}">
+            <img src="${getThumbnail(v.url)}" loading="lazy">
+          </div>
+
+          <div class="info">
+            <a href="${v.url}" target="_blank">${v.title}</a>
+            <div class="domain">${v.url}</div>
+          </div>
+        `;
+
         bindMenuEvents(item, 'item', { domain, url: v.url, item: v });
         ul.appendChild(item);
       });
@@ -291,50 +417,66 @@ $("searchInput").oninput = render;
 $("tagSelect").onchange = render;
 $("sortSelect").onchange = render;
 $("exportBtn").onclick = exportJSON;
-$("importFile").onchange = (e) => importJSON(e.target.files[0]);
-$("importBrowserFile").onchange = (e) => importBrowserHTML(e.target.files[0]);
-$("tagInput").oninput = (e) => updateTagSuggestions(e.target.value.split(",").at(-1).trim());
+
+$("importFile").onchange =
+  e => importJSON(e.target.files[0]);
+
+$("importBrowserFile").onchange =
+  e => importBrowserHTML(e.target.files[0]);
+
+$("tagInput").oninput =
+  e => updateTagSuggestions(
+    e.target.value.split(",").at(-1).trim()
+  );
+
+$("viewToggleBtn").textContent =
+  "表示: " + (state.ui.viewMode === "grid" ? "グリッド" : "縦並び");
 
 window.addEventListener("mousedown", (e) => {
-  if (!$("contextMenu").contains(e.target)) $("contextMenu").style.display = "none";
+  if (!$("contextMenu").contains(e.target))
+    $("contextMenu").style.display = "none";
 });
 
 /* =========================================================
    Context Menu Actions
-   (フォルダ追加 / リネーム / URL編集 / タイトル編集 / タグ編集 / 移動 / 削除 / コピー)
 ========================================================= */
-
-// フォルダ追加
 $("cmAddFolder").onclick = () => {
   const name = prompt("フォルダ名を入力");
   if (!name) return;
-  if (state.domainMap.has(name)) return alert("既に存在します");
+
+  if (state.domainMap.has(name))
+    return alert("既に存在します");
+
   state.domainMap.set(name, []);
   state.ui.foldState[name] = true;
-  save(); render();
+
+  save();
+  render();
 };
 
-// フォルダ名変更
 $("cmRenameFolder").onclick = () => {
   const { data } = state.ui.selected;
   const oldDomain = data.domain;
 
   const newName = prompt("新しいフォルダ名を入力", oldDomain);
   if (!newName || newName === oldDomain) return;
-
-  if (state.domainMap.has(newName)) return alert("同名フォルダがあります");
+  if (state.domainMap.has(newName))
+    return alert("同名フォルダがあります");
 
   const items = state.domainMap.get(oldDomain);
+
   state.domainMap.delete(oldDomain);
   state.domainMap.set(newName, items);
 
-  state.ui.foldState[newName] = state.ui.foldState[oldDomain];
+  state.ui.foldState[newName] =
+    state.ui.foldState[oldDomain];
+
   delete state.ui.foldState[oldDomain];
 
-  save(); render();
+  save();
+  render();
 };
 
-// URL編集
 $("cmEditUrl").onclick = () => {
   const { data } = state.ui.selected;
   const list = state.domainMap.get(data.domain);
@@ -348,10 +490,10 @@ $("cmEditUrl").onclick = () => {
   if (!normalized) return alert("URLが不正です");
 
   item.url = normalized;
-  save(); render();
+  save();
+  render();
 };
 
-// タイトル編集
 $("cmEditTitle").onclick = () => {
   const { data } = state.ui.selected;
   const list = state.domainMap.get(data.domain);
@@ -362,10 +504,10 @@ $("cmEditTitle").onclick = () => {
   if (!newTitle) return;
 
   item.title = newTitle.trim();
-  save(); render();
+  save();
+  render();
 };
 
-// タグ編集
 $("cmEditTag").onclick = () => {
   const { data } = state.ui.selected;
   const list = state.domainMap.get(data.domain);
@@ -376,14 +518,19 @@ $("cmEditTag").onclick = () => {
   const inp = prompt("タグ（カンマ区切り）", cur);
   if (inp === null) return;
 
-  item.tags = inp.split(",").map(t => t.trim()).filter(Boolean);
-  save(); updateTagUI(); render();
+  item.tags = inp.split(",")
+    .map(t => t.trim())
+    .filter(Boolean);
+
+  save();
+  updateTagUI();
+  render();
 };
 
-// ブックマーク移動
 $("cmMoveBookmark").onclick = () => {
   const { data } = state.ui.selected;
   const oldDomain = data.domain;
+
   const list = state.domainMap.get(oldDomain);
   const item = list.find(v => v.url === data.url);
   if (!item) return;
@@ -396,35 +543,60 @@ $("cmMoveBookmark").onclick = () => {
     state.ui.foldState[newDomain] = true;
   }
 
-  state.domainMap.set(oldDomain, list.filter(v => v.url !== item.url));
+  state.domainMap.set(
+    oldDomain,
+    list.filter(v => v.url !== item.url)
+  );
+
   state.domainMap.get(newDomain).push(item);
 
-  save(); render();
+  save();
+  render();
 };
 
-// 削除
 $("cmDelete").onclick = () => {
   const { type, data } = state.ui.selected;
   if (!confirm("削除しますか？")) return;
 
-  if (type === 'folder') {
+  if (type === "folder") {
     state.domainMap.delete(data.domain);
   } else {
     const list = state.domainMap.get(data.domain);
-    state.domainMap.set(data.domain, list.filter(v => v.url !== data.url));
+    state.domainMap.set(
+      data.domain,
+      list.filter(v => v.url !== data.url)
+    );
   }
-  save(); render();
+
+  save();
+  render();
 };
 
-// URLコピー
 $("cmCopyUrl").onclick = () => {
   const { data } = state.ui.selected;
-  if (data.url) {
-    navigator.clipboard.writeText(data.url);
-    alert("コピーしました");
-  }
+  if (!data.url) return;
+
+  navigator.clipboard.writeText(data.url);
+  alert("コピーしました");
 };
 
+$("viewToggleBtn").onclick = () => {
+  state.ui.viewMode =
+    state.ui.viewMode === "grid" ? "list" : "grid";
+
+  $("viewToggleBtn").textContent =
+    "表示: " +
+    (state.ui.viewMode === "grid"
+      ? "グリッド"
+      : "縦並び");
+
+  save();
+  render();
+};
+
+/* =========================================================
+   起動
+========================================================= */
 load();
 updateTagUI();
 render();

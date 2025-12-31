@@ -4,8 +4,10 @@
 
 /* =========================================================
    Base Styles
+   → 全体共通の基本デザイン設定（背景・文字・フォーム共通外観）
 ========================================================= */
 *, *::before, *::after { box-sizing: border-box; }
+
 body { 
   margin: 0; 
   background: #111; 
@@ -14,6 +16,7 @@ body {
   font-size: 16px; 
 }
 
+/* 入力フォーム・ボタンの共通スタイル */
 input, select, button { 
   background: #111; 
   border: 1px solid #444; 
@@ -23,23 +26,45 @@ input, select, button {
   font-size: 15px;
 }
 
-button { cursor: pointer; background: #333; font-weight: bold; transition: 0.2s; }
+/* ボタンの共通動作 */
+button { 
+  cursor: pointer; 
+  background: #333; 
+  font-weight: bold; 
+  transition: 0.2s; 
+}
 button:hover { background: #444; border-color: #6cf; }
 
 /* =========================================================
    Header & Controls Layout
+   → 画面上部のヘッダー & 入力UIのレイアウト領域
 ========================================================= */
-header { padding: 25px 20px; background: #1a1a1a; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 100; }
-h1 { text-align: center; color: #6cf; margin: 0 0 25px; font-size: 2rem; }
+header { 
+  padding: 25px 20px; 
+  background: #1a1a1a; 
+  border-bottom: 1px solid #333; 
+  position: sticky; 
+  top: 0; 
+  z-index: 100; 
+}
 
+h1 { 
+  text-align: center; 
+  color: #6cf; 
+  margin: 0 0 25px; 
+  font-size: 2rem; 
+}
+
+/* === 操作パネル全体 === */
 .controls { 
   display: grid; 
-  grid-template-columns: 1fr 1fr; 
+  grid-template-columns: 1fr 1fr; /* 左右２分割 */
   gap: 15px; 
   max-width: 1400px; 
   margin: auto; 
 }
 
+/* === 個別パネル（追加 / 検索 / データ管理） === */
 .control-group { 
   background: #252525; 
   padding: 18px; 
@@ -47,11 +72,12 @@ h1 { text-align: center; color: #6cf; margin: 0 0 25px; font-size: 2rem; }
   border: 1px solid #333; 
 }
 
+/* URL追加パネルだけ横幅2列ぶち抜き */
 .group-add { 
   grid-column: 1 / span 2; 
 }
 
-/* 題名入力欄を広く */
+/* 上段の Tag / Title レイアウト調整 */
 .group-add .row:first-of-type #tagInput {
   flex: 0 0 300px; 
 }
@@ -59,6 +85,7 @@ h1 { text-align: center; color: #6cf; margin: 0 0 25px; font-size: 2rem; }
   flex: 1; 
 }
 
+/* パネルタイトル */
 .control-group label { 
   display: block; 
   margin-bottom: 10px; 
@@ -67,17 +94,27 @@ h1 { text-align: center; color: #6cf; margin: 0 0 25px; font-size: 2rem; }
   font-size: 14px; 
 }
 
-.row { display: flex; gap: 10px; align-items: center; }
+/* 行の基本レイアウト */
+.row { 
+  display: flex; 
+  gap: 10px; 
+  align-items: center; 
+}
+
 .mt-10 { margin-top: 10px; }
 .flex-grow { flex: 1; }
 
-#tagSelect, #sortSelect {
+/* プルダウン幅指定 */
+#tagSelect, 
+#sortSelect {
   width: 120px;
 }
 
-.browser-import-label { background: #4a3a2a !important; }
-#exportBtn { background: #2a4a3a; }
+/* === ボタン色分類 === */
+.browser-import-label { background: #4a3a2a !important; } /* ブラウザHTML import */
+#exportBtn { background: #2a4a3a; }                        /* JSON Export */
 
+/* === ファイル選択外観 === */
 .file-label {
   display: inline-block;
   padding: 10px 15px;
@@ -87,61 +124,186 @@ h1 { text-align: center; color: #6cf; margin: 0 0 25px; font-size: 2rem; }
   cursor: pointer;
   font-size: 15px;
 }
-.file-label:hover { border-color: #6cf; background: #444; }
 
-.count-info { grid-column: 1 / span 2; text-align: right; font-size: 0.9em; color: #888; padding-top: 5px; }
+.file-label:hover { 
+  border-color: #6cf; 
+  background: #444; 
+}
+
+/* URL総数などの情報 */
+.count-info { 
+  grid-column: 1 / span 2; 
+  text-align: right; 
+  font-size: 0.9em; 
+  color: #888; 
+  padding-top: 5px; 
+}
 
 /* =========================================================
    Section & Bookmark Items
 ========================================================= */
-#container { max-width: 1400px; margin: 20px auto; padding: 0 10px; }
-.section { border: 1px solid #333; border-radius: 8px; margin-bottom: 25px; overflow: hidden; background: #161616; }
-
-.section h2 { 
-  margin: 0; 
-  padding: 15px; 
-  display: grid; 
-  grid-template-columns: 32px 1fr auto auto; 
-  align-items: center; 
-  background: #222; 
-  cursor: pointer; 
-  font-size: 1.2rem; 
-  border-bottom: 1px solid #333;
-}
-
-.section h2 > span:nth-child(2) {
-  text-align: center;
-  font-weight: bold;
+#container {
+  max-width: 1400px;
+  margin: 20px auto;
   padding: 0 10px;
 }
 
-.favicon-wrap { display: flex; align-items: center; justify-content: center; }
-.favicon-wrap img { width: 24px; height: 24px; image-rendering: -webkit-optimize-contrast; }
-
-.star { cursor: pointer; color: #888; margin-right: 15px; font-size: 1.4rem; }
-.star.active { color: gold; }
-
-.list { 
-  padding: 20px; 
-  display: grid; 
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); 
-  gap: 15px; 
+.section {
+  border: 1px solid #333;
+  border-radius: 8px;
+  margin-bottom: 25px;
+  overflow: hidden;
+  background: #161616;
 }
 
+/* ===============================
+   ▼ 見出し（ドメイン名の層）
+=============================== */
+.section h2 {
+  margin: 0;
+  padding: 15px 12px;
+  display: grid;
+  grid-template-columns: 32px 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+  background: #222;
+  border-bottom: 1px solid #333;
+  cursor: pointer;
+  font-size: 1.2rem;
+  white-space: nowrap;
+}
+
+.section h2 .favicon { width: 32px; height: 32px; display: grid; place-items: center; }
+.section h2 .title { text-align: center; font-weight: bold; }
+.section h2 .star { cursor: pointer; color: #aaa; }
+.section h2 .arrow { cursor: pointer; }
+
+/* ===============================
+   ▼ ブックマークリスト
+=============================== */
+.list {
+  padding: 20px;
+  display: grid;
+  gap: 15px;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* PC広画面：5列 */
+@media (min-width: 1400px) {
+  .list {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+.item {
+  display: block;
+  background: #1f1f1f;
+  border: 1px solid #333;
+  padding: 15px;
+  border-radius: 6px;
+}
+
+/* =========================================================
+   セクションタイトル  (favicon | 中央名 | ☆ | ▼)
+========================================================= */
+.section h2 {
+  margin: 0;
+
+  /* 横余白排除（センター揃え対策） */
+  padding: 15px 0;
+
+  display: grid;
+
+  /* 
+     4列構成：
+     1列目 → favicon用 32px固定
+     2列目 → 中央タイトル 伸縮
+     3列目 → ★
+     4列目 → ▼
+  */
+  grid-template-columns: 32px 1fr auto auto;
+
+  align-items: center;
+  background: #222;
+  border-bottom: 1px solid #333;
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+/* 中央テキスト */
+.section h2 > span:nth-child(2) {
+  text-align: center;
+  font-weight: bold;
+}
+
+/* ⭐ボタン */
+.section h2 .star {
+  cursor: pointer;
+  color: #888;
+}
+
+/* ▼ボタン */
+.section h2 small {
+  cursor: pointer;
+}
+
+/* =========================================================
+   ★ サムネイル付きブックマークカード（個々の箱）
+========================================================= */
 .item { 
   padding: 15px; 
   background: #252525; 
   border: 1px solid #444; 
   border-radius: 8px; 
   transition: all 0.2s ease-in-out; 
+
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 10px;
 }
 
+/* hover強調 */
 .item:hover { 
   background: #333; 
   border-color: #6cf; 
   transform: translateY(-2px); 
 }
 
+/* =========================================================
+   サムネイル（16:9黒帯あり・縮小対応）
+========================================================= */
+.thumb-wrap {
+  position: relative;
+  width: 100%;
+  background: #000;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #333;
+
+  /* ← サムネイルをやや小さめに見せるための上限 */
+  max-height: 150px;
+}
+
+/* サムネイル画像挙動 */
+.thumb-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* ← 黒帯維持で縮小 */
+}
+
+/* 画像無し */
+.thumb-wrap.empty::after {
+  content: "NO PREVIEW";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #777;
+  font-size: 0.9rem;
+}
+
+/* タイトルリンク */
 .item a { 
   color: #7fd3ff; 
   text-decoration: none; 
@@ -152,55 +314,64 @@ h1 { text-align: center; color: #6cf; margin: 0 0 25px; font-size: 2rem; }
   line-height: 1.4;
 }
 
-.domain { font-size: 0.85em; color: #888; word-break: break-all; opacity: 0.8; }
+/* ドメイン文字 */
+.domain { 
+  font-size: 0.85em; 
+  color: #888; 
+  word-break: break-all; 
+  opacity: 0.8; 
+}
 
 /* =========================================================
-   Mobile Adjustments (スマホ対応)
+   Mobile Adjustments
+   → スマホ幅のレイアウト最適化
 ========================================================= */
 @media (max-width: 768px) {
-  h1 { font-size: 1.5rem; margin-bottom: 15px; }
-  header { padding: 15px 10px; }
 
-  /* 2列を1列に変更 */
+  h1 { 
+    font-size: 1.5rem; 
+    margin-bottom: 15px; 
+  }
+
+  header { 
+    padding: 15px 10px; 
+  }
+
+  /* 操作UIを 1列 */
   .controls { 
     grid-template-columns: 1fr; 
   }
 
-  /* 上段の特殊指定をリセット */
-  .group-add { grid-column: 1; }
+  .group-add { 
+    grid-column: 1; 
+  }
 
-  /* スマホでは横並びを縦並びに崩す（必要に応じて） */
+  /* 行を縦並び */
   .row { 
     flex-direction: column; 
     align-items: stretch; 
   }
 
-  /* タグ・題名の幅固定を解除 */
+  /* 入力欄幅100% */
   .group-add .row:first-of-type #tagInput,
   .group-add .row:first-of-type #titleInput,
-  #tagSelect, #sortSelect {
+  #tagSelect, 
+  #sortSelect {
     width: 100%;
     flex: none;
   }
 
-  /* ブックマークリストを1列に強制 */
+  /* ブックマーク表示 → 1列 */
   .list {
-    grid-template-columns: 1fr;
-    padding: 10px;
-  }
-
-  /* ヘッダーの文字サイズを調整 */
-  .section h2 {
-    font-size: 1rem;
-    padding: 10px;
+    grid-template-columns: repeat(1, 1fr);
   }
 }
 
 /* =========================================================
-   Context Menu (右クリックメニュー) 修正版
+   Context Menu (右クリックメニュー)
 ========================================================= */
 .context-menu { 
-  position: absolute; /* fixedからabsoluteに変更してスクロール追従を安定化 */
+  position: absolute;
   background: #222; 
   border: 1px solid #444; 
   min-width: 160px; 
@@ -212,8 +383,9 @@ h1 { text-align: center; color: #6cf; margin: 0 0 25px; font-size: 2rem; }
   box-shadow: 0 8px 16px rgba(0,0,0,0.6); 
 }
 
+/* メニュー項目 */
 .context-menu li { 
-  padding: 8px 16px; /* 12pxから8pxに詰め、文字の離れすぎを解消 */
+  padding: 8px 16px;
   cursor: pointer; 
   font-size: 0.95rem; 
   color: #ddd;
@@ -224,10 +396,10 @@ h1 { text-align: center; color: #6cf; margin: 0 0 25px; font-size: 2rem; }
   background: #333; 
 }
 
-/* 削除を赤色にする設定 */
+/* 削除専用（赤強調） */
 #cmDelete { 
   color: #ff5555; 
-  border-top: 1px solid #333; /* 削除の上に薄い区切り線 */
+  border-top: 1px solid #333;
   margin-top: 4px;
 }
 
@@ -236,12 +408,25 @@ h1 { text-align: center; color: #6cf; margin: 0 0 25px; font-size: 2rem; }
   color: #ff7777; 
 }
 
-/* モバイル対応：タップ領域を少しだけ確保 */
+/* スマホ右クリックメニューちょい拡大 */
 @media (max-width: 768px) {
   .context-menu { min-width: 180px; }
   .context-menu li { padding: 12px 20px; }
 }
 
-/* Context Menu */
-.context-menu li { padding: 12px 20px; cursor: pointer; font-size: 1rem; }
-.context-menu li:hover { background: #005a8d; }
+/* =========================================================
+   表示切替：縦並びモード（list.single = 1列固定）
+========================================================= */
+.list.single {
+  grid-template-columns: repeat(1, 1fr) !important;
+}
+
+/* Context Menu (最後の上書き用スタイル：色差し替え) */
+.context-menu li { 
+  padding: 12px 20px; 
+  cursor: pointer; 
+  font-size: 1rem; 
+}
+.context-menu li:hover { 
+  background: #005a8d; 
+}

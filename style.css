@@ -196,7 +196,52 @@ h1 { text-align: center; color: #6cf; margin: 0 0 25px; font-size: 2rem; }
   }
 }
 
+/* =========================================================
+   Context Menu (右クリックメニュー) 修正版
+========================================================= */
+.context-menu { 
+  position: absolute; /* fixedからabsoluteに変更してスクロール追従を安定化 */
+  background: #222; 
+  border: 1px solid #444; 
+  min-width: 160px; 
+  display: none; 
+  z-index: 1000; 
+  list-style: none; 
+  padding: 4px 0; 
+  border-radius: 6px; 
+  box-shadow: 0 8px 16px rgba(0,0,0,0.6); 
+}
+
+.context-menu li { 
+  padding: 8px 16px; /* 12pxから8pxに詰め、文字の離れすぎを解消 */
+  cursor: pointer; 
+  font-size: 0.95rem; 
+  color: #ddd;
+  transition: background 0.1s;
+}
+
+.context-menu li:hover { 
+  background: #333; 
+}
+
+/* 削除を赤色にする設定 */
+#cmDelete { 
+  color: #ff5555; 
+  border-top: 1px solid #333; /* 削除の上に薄い区切り線 */
+  margin-top: 4px;
+}
+
+#cmDelete:hover { 
+  background: #442222; 
+  color: #ff7777; 
+}
+
+/* モバイル対応：タップ領域を少しだけ確保 */
+@media (max-width: 768px) {
+  .context-menu { min-width: 180px; }
+  .context-menu li { padding: 12px 20px; }
+}
+
 /* Context Menu */
-.context-menu { position: fixed; background: #2a2a2a; border: 1px solid #444; width: 200px; display: none; z-index: 1000; list-style: none; padding: 5px 0; border-radius: 6px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
 .context-menu li { padding: 12px 20px; cursor: pointer; font-size: 1rem; }
 .context-menu li:hover { background: #005a8d; }

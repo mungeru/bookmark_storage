@@ -157,50 +157,181 @@ h1 {
 }
 
 /* ===============================
-   ▼ 見出し（ドメイン名の層）
+   ▼ 見出し（ドメイン名の層） - タブ風レイアウト
 =============================== */
 .section h2 {
   margin: 0;
-  padding: 15px 12px;
+  padding: 15px 16px;                  /* 左右余白少し増やして呼吸しやすく */
   display: grid;
-  grid-template-columns: 32px 1fr auto auto;
-  gap: 10px;
+  grid-template-columns: 36px 1fr auto auto;  /* favicon少し大きめ（36px） */
+  gap: 12px;                            /* 間隔少し広げてゆったり */
   align-items: center;
   background: #222;
   border-bottom: 1px solid #333;
   cursor: pointer;
   font-size: 1.2rem;
+  user-select: none;                    /* テキスト選択しづらくして操作感UP */
+  transition: background 0.2s ease;     /* ホバーで背景変化（タブ感強化） */
+}
+
+.section h2:hover {
+  background: #2a2a2a;                  /* ホバーで少し明るく */
+}
+
+/* favicon */
+.section h2 .favicon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+}
+
+.section h2 .favicon img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 4px;
+}
+
+/* ドメイン名 */
+.section h2 .title {
+  font-weight: bold;
+  overflow: hidden;
+  text-overflow: ellipsis;              /* 長すぎる名前は...で省略 */
   white-space: nowrap;
 }
 
-.section h2 .favicon { width: 32px; height: 32px; display: grid; place-items: center; }
-.section h2 .title { text-align: center; font-weight: bold; }
-.section h2 .star { cursor: pointer; color: #aaa; }
-.section h2 .arrow { cursor: pointer; }
-
-/* ===============================
-   ▼ ブックマークリスト
-=============================== */
-.list {
-  padding: 20px;
-  display: grid;
-  gap: 15px;
-  grid-template-columns: repeat(3, 1fr);
+/* お気に入り★ */
+.section h2 .star {
+  cursor: pointer;
+  color: #888;
+  font-size: 1.4rem;
+  padding: 4px;
+  transition: color 0.2s;
 }
 
-/* PC広画面：5列 */
-@media (min-width: 1400px) {
-  .list {
-    grid-template-columns: repeat(5, 1fr);
+.section h2 .star.active {
+  color: #ffd700 !important;
+  text-shadow: 0 0 8px #ff0;
+}
+
+/* 開閉矢印（タブっぽく） */
+.section h2 .toggle-arrow {
+  font-size: 1.3rem;
+  color: #aaa;
+  min-width: 24px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.section h2:hover .toggle-arrow {
+  color: #6cf;
+}
+
+/* ホバー時のフィードバック強化（任意） */
+.section h2:hover .star {
+  color: #ccc;
+}
+
+/* =========================================================
+   Smart Header Hide on Scroll
+   → スクロールでヘッダー隠し、検索欄だけ固定表示
+========================================================= */
+header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+  transition: transform 0.3s ease;
+  padding: 25px 20px;
+}
+
+/* ヘッダー隠れた状態 */
+header.hidden {
+  transform: translateY(-100%);
+}
+
+/* 検索・コントロール部分（常に表示） */
+.controls {
+  position: sticky;
+  top: 0;
+  background: #1a1a1a;
+  padding: 16px 20px;
+  border-bottom: 1px solid #333;
+  transition: padding 0.3s ease, background 0.3s ease;
+  z-index: 99;
+}
+
+/* ヘッダー隠れたときのコンパクトモード */
+body.header-compact .controls {
+  padding: 10px 20px;
+  background: rgba(26, 26, 26, 0.95);
+  backdrop-filter: blur(8px);  /* 少し透けてカッコよく */
+}
+
+/* 本文の余白（ヘッダー分） */
+body {
+  padding-top: 200px;  /* ヘッダー＋コントロールの高さに合わせて調整（目安） */
+}
+
+/* スマホ対応 */
+@media (max-width: 768px) {
+  body {
+    padding-top: 160px;
+  }
+  body.header-compact .controls {
+    padding: 8px 12px;
   }
 }
 
+/* =========================================================
+   Responsive Grid Layout
+   → グリッドモード：ウィンドウ幅に応じて自動列数調整
+   → リストモード：1列固定
+========================================================= */
+
+/* 基本：レスポンシブグリッド（最小220px、最大1fr） */
+.list {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  /* 280px以上で横に並ぶ。狭くなると自動で縦並び */
+}
+
+/* 縦並びモード（リストモード） */
+.list.single {
+  grid-template-columns: 1fr !important; /* 強制1列 */
+}
+
+/* アイテムの最小幅・見た目調整 */
 .item {
-  display: block;
-  background: #1f1f1f;
-  border: 1px solid #333;
-  padding: 15px;
+  min-width: 0; /* テキスト折り返し対応 */
+  display: flex;
+  flex-direction: column;
+}
+
+/* サムネイルを固定高さに（縦並びでも綺麗に） */
+.thumb-wrap {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
   border-radius: 6px;
+}
+.thumb-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* モバイル最適化 */
+@media (max-width: 768px) {
+  .list {
+    grid-template-columns: 1fr !important; /* スマホは常に1列 */
+    padding: 12px;
+    gap: 12px;
+  }
 }
 
 /* =========================================================

@@ -39,13 +39,17 @@ button:hover { background: #444; border-color: #6cf; }
    Header & Controls Layout
    → 画面上部のヘッダー & 入力UIのレイアウト領域
 ========================================================= */
+/* 修正後（position を fixed に変更） */
 header { 
   padding: 25px 20px; 
   background: #1a1a1a; 
   border-bottom: 1px solid #333; 
-  position: sticky; 
+  position: fixed; 
   top: 0; 
-  z-index: 100; 
+  left: 0;
+  right: 0;
+  z-index: 100;
+  transition: transform 0.3s ease;
 }
 
 h1 { 
@@ -273,7 +277,17 @@ body.header-compact .controls {
 
 /* 本文の余白（ヘッダー分） */
 body {
-  padding-top: 200px;  /* ヘッダー＋コントロールの高さに合わせて調整（目安） */
+  padding-top: 0;
+}
+
+/* ヘッダー表示時のコンテナ余白 */
+body:not(.header-hidden) #container {
+  padding-top: 350px; /* ヘッダーの高さ分 */
+}
+
+/* ヘッダー非表示時 */
+body.header-hidden #container {
+  padding-top: 20px;
 }
 
 /* スマホ対応 */
@@ -560,4 +574,87 @@ body {
 }
 .context-menu li:hover { 
   background: #005a8d; 
+}
+
+/* =========================================================
+   Chrome拡張機能用の追加スタイル（style.cssの最後に追加）
+========================================================= */
+
+/* ポップアップモード対応 */
+body {
+  margin: 0;
+  overflow-y: auto;
+  min-width: 100vw;
+  min-height: 100vh;
+  padding-top: 0; /* 既存のpadding-top: 200px; を削除してこれに置き換え */
+}
+
+/* ポップアップモード用のサイズ */
+body.popup-mode {
+  width: 850px;
+  height: 650px;
+  min-width: 850px;
+  min-height: 650px;
+}
+
+/* ヘッダー表示時のコンテナ余白 */
+body:not(.header-hidden) #container {
+  padding-top: 350px; /* ヘッダーの高さ分 */
+}
+
+/* ヘッダー非表示時 */
+body.header-hidden #container {
+  padding-top: 20px;
+}
+
+/* ヘッダー開閉トグルボタン */
+#headerToggleBtn {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 1000;
+  background: #333;
+  color: #eee;
+  border: 1px solid #444;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+/* ボタンのスタイル */
+.btn-add-current {
+  background: #2a4a4a;
+  flex: 1;
+}
+
+.btn-open-tab {
+  background: #3a4a5a;
+  flex: 1;
+}
+
+.btn-sync-chrome {
+  background: #4a2a4a;
+  flex: 1;
+}
+
+/* ヒントテキスト */
+.hint-text {
+  font-size: 0.85em;
+  color: #888;
+  margin-top: 5px;
+  text-align: center;
+}
+
+/* ヘッダーのposition修正 */
+header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+  transition: transform 0.3s ease;
+  padding: 25px 20px;
 }

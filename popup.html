@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Bookmark Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<!-- 別タブで開くボタン（ポップアップモード時のみ表示） -->
+<!-- ※ 現在のタブを追加ボタンの隣に移動しました -->
+
+<!-- ヘッダー開閉トグルボタン -->
+<button id="headerToggleBtn">▼ 操作パネルを隠す</button>
+
+<header class="header">
+  <h1>ブックマーク管理</h1>
+
+  <!-- ===============================
+        操作パネル
+  ================================= -->
+  <section class="controls">
+
+    <!-- URL 追加 -->
+    <section class="control-group group-add">
+      <h2>URL追加</h2>
+
+      <div class="row">
+        <input id="tagInput" list="tagSuggestions" placeholder="タグ入力欄">
+        <datalist id="tagSuggestions"></datalist>
+
+        <input id="titleInput" placeholder="題名入力欄（空欄で自動取得）">
+      </div>
+
+      <div class="row mt-10">
+        <input id="urlInput" type="url" placeholder="URL入力欄" class="flex-grow">
+        <button id="addBtn">追加</button>
+      </div>
+      <div class="row mt-10">
+        <button id="addCurrentBtn" class="btn-add-current">📌 現在のタブを追加</button>
+        <button id="openInTabBtn" class="btn-open-tab">🗗 別ウィンドウで開く</button>
+      </div>
+      <div class="hint-text">
+        ※ページ上で右クリック→「このページをブックマークに追加」でも追加できます
+      </div>
+    </section>
+
+    <!-- 検索 / ソート / 表示切替 -->
+    <section class="control-group group-search">
+      <h2>検索 / 表示</h2>
+
+      <div class="row">
+        <input id="searchInput" placeholder="検索">
+        <select id="tagSelect">
+          <option value="">タグ</option>
+        </select>
+      </div>
+
+      <div class="row mt-10">
+        <select id="sortSelect">
+          <option value="added">お気に入り優先</option>
+          <option value="title">名前順</option>
+        </select>
+        <button id="viewToggleBtn">表示: グリッド</button>
+      </div>
+    </section>
+
+    <!-- データ管理 -->
+    <section class="control-group group-data">
+      <h2>データ管理</h2>
+
+      <div class="row">
+        <button id="exportBtn">JSON保存</button>
+        <label class="file-label">JSON読込<input type="file" id="importFile" accept=".json" hidden></label>
+        <label class="file-label browser-import-label">HTML読込<input type="file" id="importBrowserFile" accept=".html" hidden></label>
+      </div>
+      <div class="row mt-10">
+        <button id="syncChromeBtn" class="btn-sync-chrome">🔄 Chromeブックマーク同期</button>
+      </div>
+    </section>
+
+    <!-- カウント -->
+    <div id="countInfo" class="count-info"></div>
+
+  </section>
+</header>
+
+<!-- ===============================
+      表示領域
+================================= -->
+<main id="container"></main>
+
+
+<!-- ===============================
+      右クリック メニュー
+================================= -->
+<nav id="contextMenu" class="context-menu">
+  <ul>
+    <li id="cmAddFolder">フォルダ追加</li>
+    <li id="cmRenameFolder">フォルダ名変更</li>
+    <li id="cmMoveBookmark">フォルダへ移動</li>
+    <li id="cmToggleEmpty">空フォルダ表示切替</li>
+    <li id="cmEditTag">タグ編集</li>
+    <li id="cmEditUrl">URL編集</li>
+    <li id="cmEditTitle">題名を編集</li>
+    <li id="cmCopyUrl">URLコピー</li>
+    <li id="cmDelete" class="delete">削除</li>
+  </ul>
+</nav>
+
+<script type="module" src="js/main.js"></script>
+
+<script>
+  // 別タブで開くボタンのイベント
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('=== 別ウィンドウボタン初期化開始 ===');
+    
+    const openInTabBtn = document.getElementById('openInTabBtn');
+    const headerToggleBtn = document.getElementById('headerToggleBtn');
+    
+    console.log('openInTabBtn要素:', openInTabBtn);
+    
+    if (openInTabBtn) {
+      console.log('✓ ボタンが見つかりました');
+      
+      openInTabBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        console.log('🗗 ボタンがクリックされました！');
+        
+        try {
+          if (typeof chrome !== 'undefined' && chrome.tabs) {
+            const url = chrome.runtime.getURL('popup.html');
+            console.log('開くURL:', url);
+            
+            await chrome.tabs.create({ url: url });
+            console.log('✓ 新しいタブを開きました');
+            
+            // ポップアップの場合は閉じる
+            setTimeout(() => {
+              if (window.innerWidth < 900) {
+                window.close();
+              }
+            }, 100);
+          } else {
+            console.error('Chrome Tabs APIが利用できません');
+            alert('別ウィンドウで開く機能は拡張機能としてのみ利用できます');
+          }
+        } catch (error) {
+          console.error('エラー:', error);
+          alert('エラー: ' + error.message);
+        }
+      });
+      
+      console.log('✓ イベントリスナーを登録しました');
+    } else {
+      console.error('✗ openInTabBtn が見つかりません！');
+      console.log('全てのボタン:', document.querySelectorAll('button'));
+    }
+    
+    // ヘッダー表示/非表示でbodyクラスを切り替え
+    if (headerToggleBtn) {
+      const updateBodyClass = () => {
+        const header = document.querySelector('header');
+        if (header.style.transform === 'translateY(-100%)') {
+          document.body.classList.add('header-hidden');
+        } else {
+          document.body.classList.remove('header-hidden');
+        }
+      };
+      
+      // 初期状態を反映
+      updateBodyClass();
+      
+      // ボタンクリック時も更新
+      const originalOnClick = headerToggleBtn.onclick;
+      headerToggleBtn.onclick = function() {
+        if (originalOnClick) originalOnClick.call(this);
+        setTimeout(updateBodyClass, 50);
+      };
+    }
+    
+    // ポップアップモードの判定
+    const isSmallWindow = window.innerWidth <= 900 || window.innerHeight <= 700;
+    if (isSmallWindow) {
+      document.body.classList.add('popup-mode');
+      console.log('✓ popup-modeクラスを追加');
+    }
+    
+    console.log('=== 初期化完了 ===');
+  });
+</script>
+</body>
+</html>

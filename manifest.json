@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "Bookmark Manager",
+  "version": "1.0.0",
+  "description": "高機能なブックマーク管理ツール",
+  "permissions": [
+    "storage",
+    "bookmarks",
+    "tabs",
+    "unlimitedStorage",
+    "contextMenus",
+    "notifications"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "options_page": "popup.html",
+  "chrome_url_overrides": {
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+B"
+      }
+    },
+    "open-in-tab": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+M"
+      },
+      "description": "別タブでブックマークマネージャーを開く"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "host_permissions": [
+    "https://r.jina.ai/*",
+    "https://www.google.com/*",
+    "https://*/*",
+    "http://*/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}

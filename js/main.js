@@ -1,31 +1,53 @@
 /* =========================================================
-   Main - 起動とイベント登録の総まとめ
+   Main - 起動とイベント登録（Chrome拡張機能版・非同期対応）
 ========================================================= */
-import { load, save } from './storage.js';
+import { load, save, exportJSON, importJSON, importBrowserHTML, syncFromChrome } from './storage.js';
 import { render } from './render.js';
-import { updateTagUI } from './ui-tag.js';
-import { addBookmark } from './bookmark.js';
+import { updateTagUI, updateTagSuggestions } from './ui-tag.js';
+import { addBookmark, addCurrentTab } from './bookmark.js';
 import { $ } from './utils.js';
 import { state } from './state.js';
 
-// 起動処理
-load();
-updateTagUI();
+// 起動処理（完全非同期対応）
+async function init() {
+  console.log('🚀 アプリ起動中...');
+  
+  // データ読み込みを待つ
+  await load();
+  
+  console.log('📊 データ読み込み完了:', {
+    domains: state.domainMap.size,
+    bookmarks: Array.from(state.domainMap.values()).reduce((sum, arr) => sum + arr.length, 0)
+  });
+  
+  // UIを更新
+  updateTagUI();
 
-// viewToggleBtn の初期テキスト設定（load後に一度だけ）
-const viewBtn = $("viewToggleBtn");
-if (viewBtn) {
-  viewBtn.textContent = "表示: " + (state.ui.viewMode === "grid" ? "グリッド" : "縦並び");
+  // viewToggleBtn の初期テキスト設定
+  const viewBtn = $("viewToggleBtn");
+  if (viewBtn) {
+    viewBtn.textContent = "表示: " + (state.ui.viewMode === "grid" ? "リスト" : "グリッド");
+  }
+
+  // 画面描画
+  render();
+  
+  console.log('✅ 初期化完了');
 }
 
-render();
+// 初期化実行
+init().catch(error => {
+  console.error('❌ 初期化エラー:', error);
+});
 
 // イベント登録
 $("addBtn").onclick = addBookmark;
+$("addCurrentBtn").onclick = addCurrentTab;
 $("searchInput").oninput = render;
 $("tagSelect").onchange = render;
 $("sortSelect").onchange = render;
 $("exportBtn").onclick = () => exportJSON();
+$("syncChromeBtn").onclick = () => syncFromChrome();
 
 $("importFile").onchange = e => importJSON(e.target.files[0]);
 $("importBrowserFile").onchange = e => importBrowserHTML(e.target.files[0]);
@@ -33,9 +55,8 @@ $("importBrowserFile").onchange = e => importBrowserHTML(e.target.files[0]);
 $("tagInput").oninput = e =>
   updateTagSuggestions(e.target.value.split(",").at(-1)?.trim() || "");
 
-// viewToggleBtn のテキストをより明確に
-viewBtn.textContent = state.ui.viewMode === "grid" ? "表示: リスト" : "表示: グリッド";
-
+// 表示切替ボタン
+const viewBtn = $("viewToggleBtn");
 viewBtn.onclick = () => {
   state.ui.viewMode = state.ui.viewMode === "grid" ? "list" : "grid";
   viewBtn.textContent = state.ui.viewMode === "grid" ? "表示: リスト" : "表示: グリッド";
@@ -43,6 +64,7 @@ viewBtn.onclick = () => {
   render();
 };
 
+// 右クリックメニューを閉じる
 window.addEventListener("click", (e) => {
   const menu = $("contextMenu");
   if (menu && menu.style.display === "block" && !menu.contains(e.target)) {
@@ -50,7 +72,7 @@ window.addEventListener("click", (e) => {
   }
 });
 
-// ヘッダー開閉トグル（CSS変更なしでtransformだけ使う）
+// ヘッダー開閉トグル
 const header = document.querySelector('header');
 const headerToggleBtn = $("headerToggleBtn");
 
@@ -83,7 +105,6 @@ let ticking = false;
 function updateHeaderOnScroll() {
   const currentScrollY = window.scrollY;
   const header = document.querySelector('header');
-  const controls = document.querySelector('.controls');
 
   if (currentScrollY > lastScrollY && currentScrollY > 100) {
     // 下スクロール → ヘッダー隠す
@@ -111,9 +132,6 @@ window.addEventListener('scroll', () => {
 
 // 起動時に状態復元
 if (state.ui.headerCompact) {
-  document.querySelector('header').classList.add('hidden');
+  document.querySelector('header')?.classList.add('hidden');
   document.body.classList.add('header-compact');
 }
-
-import { exportJSON, importJSON, importBrowserHTML } from './storage.js';
-import { updateTagSuggestions } from './ui-tag.js';
